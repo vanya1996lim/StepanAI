@@ -1,5 +1,5 @@
 python-telegram-bot==20.7
-yt-dlp==2024.1.19
+yt-dlp
 moviepy==1.0.3
 Pillow==10.2.0
 openai==1.10.0
