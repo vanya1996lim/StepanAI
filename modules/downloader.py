@@ -11,31 +11,43 @@ async def download_video(url: str) -> str:
     output_dir = "temp"
     os.makedirs(output_dir, exist_ok=True)
 
+    # Витягуємо video ID з YouTube URL
+    video_id = url
+    if "youtube.com" in url or "youtu.be" in url:
+        if "v=" in url:
+            video_id = url.split("v=")[1].split("&")[0]
+        elif "youtu.be/" in url:
+            video_id = url.split("youtu.be/")[1].split("?")[0]
+
     async with aiohttp.ClientSession() as session:
         headers = {
             "x-rapidapi-key": RAPIDAPI_KEY,
-            "x-rapidapi-host": "social-media-video-downloader.p.rapidapi.com"
+            "x-rapidapi-host": "youtube-media-downloader.p.rapidapi.com"
         }
 
-        # Отримуємо інфо про відео
-        api_url = "https://social-media-video-downloader.p.rapidapi.com/smvd/get/all"
-        params = {"url": url}
+        params = {
+            "videoId": video_id,
+            "urlAccess": "normal",
+            "videos": "auto",
+            "audios": "auto"
+        }
 
-        async with session.get(api_url, headers=headers, params=params) as resp:
+        async with session.get(
+            "https://youtube-media-downloader.p.rapidapi.com/v2/video/details",
+            headers=headers, params=params
+        ) as resp:
             data = await resp.json()
-            logger.info(f"API response keys: {list(data.keys()) if isinstance(data, dict) else data}")
+            logger.info(f"API keys: {list(data.keys()) if isinstance(data, dict) else data}")
 
-        # Шукаємо пряме посилання на відео
+        # Шукаємо відео посилання
         video_url = None
-        if isinstance(data, dict):
-            links = data.get("links", [])
-            if links:
-                for link in links:
-                    if isinstance(link, dict) and link.get("quality") in ["720p", "480p", "360p", "hd", "sd"]:
-                        video_url = link.get("link")
-                        break
-                if not video_url and links:
-                    video_url = links[0].get("link") if isinstance(links[0], dict) else links[0]
+        videos = data.get("videos", {})
+        if isinstance(videos, dict):
+            items = videos.get("items", [])
+            for v in items:
+                if isinstance(v, dict) and v.get("height", 9999) <= 720:
+                    video_url = v.get("url")
+                    break
 
         if not video_url:
             raise ValueError(f"Не вдалось отримати посилання: {data}")
