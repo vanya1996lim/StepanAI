@@ -11,12 +11,12 @@ async def download_video(url: str) -> str:
 
     ydl_opts = {
         "outtmpl": f"{output_dir}/%(id)s.%(ext)s",
-        "format": "best",
+        "format": "bestvideo+bestaudio/best",
         "cookiefile": "data/cookies.txt",
         "quiet": True,
         "no_warnings": True,
         "http_headers": {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15"
         }
     }
 
