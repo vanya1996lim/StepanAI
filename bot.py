@@ -98,6 +98,23 @@ async def pages(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ===== ОБРОБКА ПОСИЛАНЬ =====
 
+
+async def handle_document(update, context):
+    doc = update.message.document
+    if not doc or not doc.mime_type or 'video' not in doc.mime_type:
+        return
+    msg = await update.message.reply_text('⬇️ Отримав відео, завантажую...')
+    try:
+        file = await doc.get_file()
+        os.makedirs('temp', exist_ok=True)
+        video_path = f'temp/{doc.file_id}.mp4'
+        await file.download_to_drive(video_path)
+        await msg.edit_text('✂️ AI нарізає відео на рілси...')
+        clips = await process_video(video_path, mascot_path='data/mascot.png')
+        await msg.edit_text(f'✅ Готово {len(clips)} роликів! Перевір папку clips.')
+    except Exception as e:
+        await msg.edit_text(f'❌ Помилка: {e}')
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message
 
@@ -195,6 +212,7 @@ def main():
     app.add_handler(CommandHandler("report", report))
     app.add_handler(CommandHandler("pages", pages))
     
+    app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
     app.add_handler(MessageHandler(filters.TEXT | filters.PHOTO | filters.Document.ALL, handle_message))
 
     logger.info("Бот запущено!")
