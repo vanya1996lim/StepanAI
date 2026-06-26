@@ -1,5 +1,0 @@
-[build]
-nixpacksVersion = "latest"
-
-[build.nixpacksPlan]
-nixPkgs = ["ffmpeg"]
