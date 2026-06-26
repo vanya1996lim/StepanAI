@@ -5,41 +5,43 @@ import aiohttp
 
 logger = logging.getLogger(__name__)
 
-RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY", "a389fce096mshcb0341ae8ba5075p1b91cejsn17a50795028c")
+RAPIDAPI_KEY = "a389fce096mshcb0341ae8ba5075p1b91cejsn17a50795028c"
 
 async def download_video(url: str) -> str:
     output_dir = "temp"
     os.makedirs(output_dir, exist_ok=True)
 
     async with aiohttp.ClientSession() as session:
-        # Download All in One API
-        api_url = "https://download-all-in-one.p.rapidapi.com/v1/download"
         headers = {
             "x-rapidapi-key": RAPIDAPI_KEY,
-            "x-rapidapi-host": "download-all-in-one.p.rapidapi.com",
-            "Content-Type": "application/json"
+            "x-rapidapi-host": "social-media-video-downloader.p.rapidapi.com"
         }
-        payload = {"url": url}
 
-        async with session.post(api_url, json=payload, headers=headers) as resp:
+        # Отримуємо інфо про відео
+        api_url = "https://social-media-video-downloader.p.rapidapi.com/smvd/get/all"
+        params = {"url": url}
+
+        async with session.get(api_url, headers=headers, params=params) as resp:
             data = await resp.json()
-            logger.info(f"API response: {data}")
+            logger.info(f"API response keys: {list(data.keys()) if isinstance(data, dict) else data}")
 
-        # Отримуємо пряме посилання на відео
+        # Шукаємо пряме посилання на відео
         video_url = None
         if isinstance(data, dict):
-            video_url = (data.get("url") or data.get("download_url") or 
-                        data.get("video_url") or data.get("link"))
-            if not video_url and data.get("medias"):
-                medias = data["medias"]
-                if isinstance(medias, list) and medias:
-                    video_url = medias[0].get("url") or medias[0].get("link")
+            links = data.get("links", [])
+            if links:
+                for link in links:
+                    if isinstance(link, dict) and link.get("quality") in ["720p", "480p", "360p", "hd", "sd"]:
+                        video_url = link.get("link")
+                        break
+                if not video_url and links:
+                    video_url = links[0].get("link") if isinstance(links[0], dict) else links[0]
 
         if not video_url:
-            raise ValueError(f"Не вдалось отримати посилання на відео: {data}")
+            raise ValueError(f"Не вдалось отримати посилання: {data}")
 
         # Завантажуємо відео
-        video_path = f"{output_dir}/video_{hash(url)}.mp4"
+        video_path = f"{output_dir}/video_{abs(hash(url))}.mp4"
         async with session.get(video_url) as video_resp:
             with open(video_path, "wb") as f:
                 async for chunk in video_resp.content.iter_chunked(8192):
