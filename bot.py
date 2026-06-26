@@ -194,6 +194,21 @@ def main():
     app.add_handler(CommandHandler("mascot", mascot_command))
     app.add_handler(CommandHandler("report", report))
     app.add_handler(CommandHandler("pages", pages))
+    
+async def handle_video_file(update, context):
+    msg = await update.message.reply_text('⬇️ Отримав відео, обробляю...')
+    try:
+        file = await update.message.video.get_file()
+        os.makedirs('temp', exist_ok=True)
+        video_path = f'temp/upload_{update.message.video.file_id}.mp4'
+        await file.download_to_drive(video_path)
+        await msg.edit_text('✂️ AI нарізає відео на рілси...')
+        clips = await process_video(video_path, mascot_path='data/mascot.png')
+        await msg.edit_text(f'✅ Готово {len(clips)} роликів!')
+    except Exception as e:
+        await msg.edit_text(f'❌ Помилка: {e}')
+
+    app.add_handler(MessageHandler(filters.VIDEO, handle_video_file))
     app.add_handler(MessageHandler(filters.TEXT | filters.PHOTO | filters.Document.ALL, handle_message))
 
     logger.info("Бот запущено!")
