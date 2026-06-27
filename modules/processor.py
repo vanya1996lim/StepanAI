@@ -59,8 +59,8 @@ def add_mascot(video_path, output_path, mascot_path):
     x = 1080 - w - 20
     y = 1920 - h
     cmd = ["ffmpeg", "-y", "-i", video_path, "-i", mascot_path,
-           "-filter_complex", f"[1:v]scale={w}:{h}[m];[0:v][m]overlay={x}:{y}",
-           "-map", "0:a", "-c:v", "libx264", "-c:a", "aac", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
+           "-filter_complex", f"[1:v]scale={w}:{h}[m];[0:v][m]overlay={x}:{y}[out]",
+           "-map", "[out]", "-map", "0:a", "-c:v", "libx264", "-c:a", "aac", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         raise RuntimeError(f"Mascot: {r.stderr[-200:]}")
