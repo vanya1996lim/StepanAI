@@ -93,11 +93,20 @@ async def generate_title(name=""):
         return name.upper()[:50] if name else "ДИВИСЬ ДО КІНЦЯ"
 
 def add_title(video_path, output_path, title):
-    safe = title.replace("'", "").replace(":", "").replace("\\", "")[:50]
+    words = title.replace("'", "").replace(":", "").replace("\\", "").replace('"', "").split()
+    lines = []
+    for i in range(0, len(words), 3):
+        lines.append(" ".join(words[i:i+3]))
+    drawtext = ""
+    for i, line in enumerate(lines[:3]):
+        y = 180 + i * 75
+        if i > 0:
+            drawtext += ","
+        drawtext += f"drawtext=text='{line}':fontsize=55:fontcolor=white:borderw=3:bordercolor=black:x=(w-text_w)/2:y={y}:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
     cmd = [
         "ffmpeg", "-y", "-i", video_path,
-        "-filter_complex", f"[0:v]drawtext=text='{safe}':fontsize=65:fontcolor=white:borderw=4:bordercolor=black:x=(w-text_w)/2:y=200:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf[out]",
-        "-map", "[out]", "-map", "0:a",
+        "-vf", drawtext,
+        "-map", "0:v", "-map", "0:a",
         "-c:v", "libx264", "-b:v", "800k", "-c:a", "aac", "-b:a", "128k",
         "-preset", "fast", "-pix_fmt", "yuv420p", output_path
     ]
