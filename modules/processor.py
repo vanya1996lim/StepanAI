@@ -39,8 +39,7 @@ def convert_to_vertical(input_path, output_path, start, duration):
     is_vertical = h > w
 
     if is_vertical:
-        cmd = ["ffmpeg", "-y", "-ss", str(start), "-i", input_path, "-t", str(duration),
-               "-c", "copy", output_path]
+        cmd = ["ffmpeg", "-y", "-ss", str(start), "-i", input_path, "-t", str(duration), "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2", "-c:v", "libx264", "-c:a", "aac", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
     else:
         # Горизонтальне — конвертуємо з розмитим фоном
         cmd = ["ffmpeg", "-y", "-ss", str(start), "-i", input_path, "-t", str(duration),
