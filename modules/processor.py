@@ -42,7 +42,7 @@ def convert_to_vertical(input_path, output_path, start, duration):
             "-ss", str(start), "-i", input_path, "-t", str(duration),
             "-filter_complex", "[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2[out]",
             "-map", "[out]", "-map", "0:a",
-            "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k",
+            "-c:v", "libx264", "-b:v", "600k", "-c:a", "aac", "-b:a", "128k",
             "-preset", "fast", "-pix_fmt", "yuv420p", output_path
         ]
     else:
@@ -51,7 +51,7 @@ def convert_to_vertical(input_path, output_path, start, duration):
             "-ss", str(start), "-i", input_path, "-t", str(duration),
             "-filter_complex", "[0:v]scale=1080:1920,boxblur=20:5[bg];[0:v]scale=1080:607[vid];[bg][vid]overlay=0:656[out]",
             "-map", "[out]", "-map", "0:a",
-            "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k",
+            "-c:v", "libx264", "-b:v", "600k", "-c:a", "aac", "-b:a", "128k",
             "-preset", "fast", "-pix_fmt", "yuv420p", output_path
         ]
     r = subprocess.run(cmd, capture_output=True, text=True)
@@ -73,7 +73,7 @@ def add_mascot(video_path, output_path, mascot_path):
         "-i", video_path, "-i", mascot_path,
         "-filter_complex", f"[1:v]scale={w}:{h}[m];[0:v][m]overlay={x}:{y}[out]",
         "-map", "[out]", "-map", "0:a",
-        "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k",
+        "-c:v", "libx264", "-b:v", "600k", "-c:a", "aac", "-b:a", "128k",
         "-preset", "fast", "-pix_fmt", "yuv420p", output_path
     ]
     r = subprocess.run(cmd, capture_output=True, text=True)
@@ -98,7 +98,7 @@ def add_title(video_path, output_path, title):
         "ffmpeg", "-y", "-i", video_path,
         "-filter_complex", f"[0:v]drawtext=text='{safe}':fontsize=65:fontcolor=white:borderw=4:bordercolor=black:x=(w-text_w)/2:y=200:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf[out]",
         "-map", "[out]", "-map", "0:a",
-        "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k",
+        "-c:v", "libx264", "-b:v", "600k", "-c:a", "aac", "-b:a", "128k",
         "-preset", "fast", "-pix_fmt", "yuv420p", output_path
     ]
     r = subprocess.run(cmd, capture_output=True, text=True)
