@@ -39,11 +39,11 @@ def convert_to_vertical(input_path, output_path, start, duration):
     if is_vertical:
         cmd = ["ffmpeg", "-y", "-ss", str(start), "-i", input_path, "-t", str(duration),
                "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2",
-               "-c:v", "libx264", "-c:a", "aac", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
+               "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
     else:
         cmd = ["ffmpeg", "-y", "-ss", str(start), "-i", input_path, "-t", str(duration),
                "-filter_complex", "[0:v]scale=1080:1920,boxblur=20:5[bg];[0:v]scale=1080:607[vid];[bg][vid]overlay=0:656[out]",
-               "-map", "[out]", "-map", "0:a", "-c:v", "libx264", "-c:a", "aac", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
+               "-map", "[out]", "-map", "0:a", "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         raise RuntimeError(f"FFmpeg: {r.stderr[-300:]}")
@@ -60,7 +60,7 @@ def add_mascot(video_path, output_path, mascot_path):
     y = 1920 - h
     cmd = ["ffmpeg", "-y", "-i", video_path, "-i", mascot_path,
            "-filter_complex", f"[1:v]scale={w}:{h}[m];[0:v][m]overlay={x}:{y}[out]",
-           "-map", "[out]", "-map", "0:a", "-c:v", "libx264", "-c:a", "aac", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
+           "-map", "[out]", "-map", "0:a", "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         raise RuntimeError(f"Mascot: {r.stderr[-200:]}")
@@ -81,7 +81,7 @@ def add_title(video_path, output_path, title):
     safe = title.replace("'",'').replace(":","").replace("\\","")[:50]
     cmd = ["ffmpeg", "-y", "-i", video_path,
            "-vf", f"drawtext=text='{safe}':fontsize=65:fontcolor=white:borderw=4:bordercolor=black:x=(w-text_w)/2:y=120:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-           "-map", "0:a", "-c:v", "libx264", "-c:a", "aac", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
+           "-map", "0:a", "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         import shutil
