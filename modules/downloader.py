@@ -3,6 +3,37 @@ import os
 import asyncio
 import logging
 import random
+import tempfile
+
+COOKIES_CONTENT = """# Netscape HTTP Cookie File
+# https://curl.haxx.se/rfc/cookie_spec.html
+# This is a generated file! Do not edit.
+
+.youtube.com	TRUE	/	FALSE	1815293688	HSID	AY5jQ9JHWq7Jcrv7F
+.youtube.com	TRUE	/	TRUE	1815293688	SSID	AVwhcEmL_FlVzWB6x
+.youtube.com	TRUE	/	FALSE	1815293688	APISID	zjJyZgVlxDsaa1Dw/AGLtitGYMRIrkD4fi
+.youtube.com	TRUE	/	TRUE	1815293688	SAPISID	U9_e_xcdMPqug9Ie/Aln9SX-t70kwto89G
+.youtube.com	TRUE	/	TRUE	1815293688	__Secure-1PAPISID	U9_e_xcdMPqug9Ie/Aln9SX-t70kwto89G
+.youtube.com	TRUE	/	TRUE	1815293688	__Secure-3PAPISID	U9_e_xcdMPqug9Ie/Aln9SX-t70kwto89G
+.youtube.com	TRUE	/	TRUE	1814535350	LOGIN_INFO	AFmmF2swRAIgSTkHG17iV_prAnrDr1nHqNP8rpJg48qg-f3Je1Wb6uMCIFvBNZXnOtePPzPjOelN4o_Y-BberMxKsAUA3Q5W2PUG:QUQ3MjNmd05qTDc5cldZLTdDMm82UlBRVTdsTVU4RHIxRGJmWlFfY0hUX0twQm5POGpkLXZjZzhKNlFIT2txSTNkTkZvR0I3N3JKS21LYmJib0llUEp2R1Y5LTlWMV9wVWRXZ2lUQzdtVUdfWE5TV2dHR2t3Wkg1WXNTekVDNllicUJqZzlGSzY3cUY0cV9Td09INDVGTlpLaUpuWk1wc2pB
+.youtube.com	TRUE	/	TRUE	1817065899	PREF	f6=40000080&tz=Europe.Kiev&f4=4000000&f5=30000&f7=100
+.youtube.com	TRUE	/	FALSE	1815293688	SID	g.a000-whPdBjK2AzPoOOg-edo2H3qwI7POcy8XUwQLk5PJKvnv4UPs9k-lQ5Sv8jCSDu5vognaAACgYKAdcSARMSFQHGX2MiAIK3jnKVTfEbDUTYPKBL2RoVAUF8yKrHn6pWqV5YkEYk2cEtzh0d0076
+.youtube.com	TRUE	/	TRUE	1815293688	__Secure-1PSID	g.a000-whPdBjK2AzPoOOg-edo2H3qwI7POcy8XUwQLk5PJKvnv4UP_ApKaI0r-iZHwuTsaAFKUwACgYKAfoSARMSFQHGX2MidXFe0e_evIuh7kwYqKai0BoVAUF8yKrd238SVdZqb0cAtpi3VNZx0076
+.youtube.com	TRUE	/	TRUE	1815293688	__Secure-3PSID	g.a000-whPdBjK2AzPoOOg-edo2H3qwI7POcy8XUwQLk5PJKvnv4UPWM9Qj4lCbtSjrQhx49hscAACgYKAYESARMSFQHGX2MiX_PLQq6JhUSrYzguWmmlahoVAUF8yKojTFMtCoyw5sUDZ-mChIOw0076
+.youtube.com	TRUE	/	FALSE	0	wide	1
+.youtube.com	TRUE	/	TRUE	1782506337	CONSISTENCY	AFeheW1vpHAboX2UwWtU_0625GpZDkA-Z0T-MqiuRknQixnJaqCLvNLhVk1ognWSy-Fazwb8kv9k8NQtddJxhvS3cGNMbBytJTi0t0sFSjdX3A_AGF9pIiU0UA8
+.youtube.com	TRUE	/	TRUE	1814041881	__Secure-1PSIDTS	sidts-CjUByojQU5jJgb82_L0Q7KY0iCypTERj-FrGSqb2ngCz7KWSSFzFJinu11lyjMsElU3kQelNqxAA
+.youtube.com	TRUE	/	TRUE	1814041881	__Secure-3PSIDTS	sidts-CjUByojQU5jJgb82_L0Q7KY0iCypTERj-FrGSqb2ngCz7KWSSFzFJinu11lyjMsElU3kQelNqxAA
+.youtube.com	TRUE	/	FALSE	1814041902	SIDCC	AKEyXzUe4FZ73U05Une-9t_D143-YiAFi8q7rI-MbBqZQhCKbxJ-tDXuighAEuOA8IXw-OeGiU8
+.youtube.com	TRUE	/	TRUE	1814041902	__Secure-1PSIDCC	AKEyXzWfKFFE_Qpz2A6EOrdsnV5Da2n9Dva1Nl4TKbIWz1o7RypTuV89LTRjTQVAtKgTLZb0zKY
+.youtube.com	TRUE	/	TRUE	1814041902	__Secure-3PSIDCC	AKEyXzXYMnPOSxe0zvvK-EPBFNFbdXEpEEiK4kk2hgSib58WkUT3SUqotTSBhDNJa7jWD5vROYY
+.youtube.com	TRUE	/	TRUE	1798057893	VISITOR_INFO1_LIVE	GHRrHs6nKi4
+.youtube.com	TRUE	/	TRUE	1798057893	VISITOR_PRIVACY_METADATA	CgJVQRIEGgAgFw%3D%3D
+.youtube.com	TRUE	/	TRUE	0	YSC	av-dBeuDVBk
+.youtube.com	TRUE	/	TRUE	1798056606	__Secure-YNID	19.YT=JvYTNR2rBYWgnyoOfiybjvLOxhjLHg1Sm57dUo-gJDGWX35a4zzHMSkxKieijIBRF7O8Q_EXz00ePa3Cj3tSUOJAzG769z6kPd915wwHAyX1liIMcr8HPvljPp0gTWNc2VgO8nq2iExK0QjYFNCX040vZWjjzljR4ih49D2wHLfxIW7WoK0uBW3AedtnD3oIf2ahfdKVKRu6Tio3k4u7ko2i89S29_fi_cgIA_nJcjQeav1uDNikDQF6GtlTlrZ8sUXRoTnuLkFYlAUqb2zZ_bckqizkVCjT9CkevXamGH9d5I_ekG2MOmF4uUxNU-zd0_oL8vHGkaN79j0HFr228A
+.youtube.com	TRUE	/	TRUE	1798056606	__Secure-ROLLOUT_TOKEN	CJyM39q78tP9OxDMzbLijNyUAxi29dGO26WVAw%3D%3D
+"""
+
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +50,12 @@ PROXIES = [
     "http://liejdvlv:c44vg83ye651@191.96.254.138:6185",
 ]
 
+def _write_cookies():
+    path = "/tmp/yt_cookies.txt"
+    with open(path, "w") as f:
+        f.write(COOKIES_CONTENT)
+    return path
+
 async def download_video(url: str) -> str:
     output_dir = "temp"
     os.makedirs(output_dir, exist_ok=True)
@@ -30,7 +67,7 @@ async def download_video(url: str) -> str:
         "outtmpl": f"{output_dir}/%(id)s.%(ext)s",
         "format": "bestvideo[height<=720]+bestaudio/best",
         "proxy": proxy,
-        "cookiefile": "data/cookies.txt",
+        "cookiefile": _write_cookies(),
         "quiet": True,
         "no_warnings": True,
         "merge_output_format": "mp4",
