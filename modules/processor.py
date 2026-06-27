@@ -2,6 +2,7 @@ import subprocess
 import os
 import asyncio
 import logging
+import os
 from PIL import Image
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,7 @@ def detect_best_moments(video_path, min_duration=30, max_duration=90, max_clips=
     import json
     total_duration = float(json.loads(result.stdout)['format']['duration'])
     logger.info(f"Тривалість: {total_duration:.0f} сек")
+    logger.info(f"Файл існує: {os.path.exists(video_path)}, розмір: {os.path.getsize(video_path) if os.path.exists(video_path) else 0}")
     clips = []
     current = 0
     while current + min_duration < total_duration and len(clips) < max_clips:
