@@ -219,7 +219,7 @@ def main():
     if not token:
         raise ValueError("Не знайдено TELEGRAM_BOT_TOKEN в змінних середовища")
 
-    app = Application.builder().token(token).build()
+    app = Application.builder().token(token).read_timeout(120).write_timeout(120).connect_timeout(60).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
