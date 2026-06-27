@@ -65,7 +65,7 @@ async def download_video(url: str) -> str:
 
     ydl_opts = {
         "outtmpl": f"{output_dir}/%(id)s.%(ext)s",
-        "format": "bestvideo[height<=720]+bestaudio/best",
+        "format": "bestvideo[height<=720][vcodec^=avc]+bestaudio/best",
         "proxy": proxy,
         "cookiefile": _write_cookies(),
         "quiet": True,
