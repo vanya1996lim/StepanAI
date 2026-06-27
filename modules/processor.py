@@ -11,7 +11,7 @@ def get_duration(video_path):
     r = subprocess.run(["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", video_path], capture_output=True, text=True)
     return float(json.loads(r.stdout)["format"]["duration"])
 
-def detect_best_moments(video_path, min_duration=30, max_duration=90, max_clips=20):
+def detect_best_moments(video_path, min_duration=5, max_duration=90, max_clips=20):
     total = get_duration(video_path)
     logger.info(f"Тривалість: {total:.0f} сек")
     if total < min_duration:
