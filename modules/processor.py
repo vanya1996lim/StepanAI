@@ -78,7 +78,8 @@ async def process_video(video_path, mascot_path="data/mascot.png"):
     loop = asyncio.get_event_loop()
     moments = await loop.run_in_executor(None, detect_best_moments, video_path)
     if not moments:
-        raise ValueError("Не знайдено моментів у відео")
+        # Відео коротке — обробляємо як один кліп
+        moments = [(0, total_duration if "total_duration" in dir() else 60)]
     ready_clips = []
     for i, (start, end) in enumerate(moments):
         try:
