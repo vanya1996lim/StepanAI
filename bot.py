@@ -135,7 +135,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Якщо це посилання на відео
     text = message.text or ""
-    if any(domain in text for domain in ['youtube.com', 'youtu.be', 'tiktok.com']):
+    if any(domain in text for domain in ['youtube.com', 'youtu.be', 'tiktok.com', 'facebook.com', 'fb.watch', 'instagram.com']):
         await handle_video_link(update, context, text)
         return
 
