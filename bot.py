@@ -220,7 +220,6 @@ def main():
     app.add_handler(CommandHandler("report", report))
     app.add_handler(CommandHandler("pages", pages))
     
-    app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
     app.add_handler(MessageHandler(filters.TEXT | filters.PHOTO | filters.Document.ALL, handle_message))
 
     logger.info("Бот запущено!")
