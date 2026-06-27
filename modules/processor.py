@@ -37,16 +37,26 @@ def convert_to_vertical(input_path, output_path, start, duration):
     _, w, h = get_video_info(input_path)
     is_vertical = h > w
     if is_vertical:
-        cmd = ["ffmpeg", "-y", "-ss", str(start), "-i", input_path, "-t", str(duration),
-               "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2",
-               "-map", "0:v", "-map", "0:a", "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
+        cmd = [
+            "ffmpeg", "-y",
+            "-ss", str(start), "-i", input_path, "-t", str(duration),
+            "-filter_complex", "[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2[out]",
+            "-map", "[out]", "-map", "0:a",
+            "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k",
+            "-preset", "fast", "-pix_fmt", "yuv420p", output_path
+        ]
     else:
-        cmd = ["ffmpeg", "-y", "-ss", str(start), "-i", input_path, "-t", str(duration),
-               "-filter_complex", "[0:v]scale=1080:1920,boxblur=20:5[bg];[0:v]scale=1080:607[vid];[bg][vid]overlay=0:656[out]",
-               "-map", "[out]", "-map", "0:a", "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
+        cmd = [
+            "ffmpeg", "-y",
+            "-ss", str(start), "-i", input_path, "-t", str(duration),
+            "-filter_complex", "[0:v]scale=1080:1920,boxblur=20:5[bg];[0:v]scale=1080:607[vid];[bg][vid]overlay=0:656[out]",
+            "-map", "[out]", "-map", "0:a",
+            "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k",
+            "-preset", "fast", "-pix_fmt", "yuv420p", output_path
+        ]
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
-        raise RuntimeError(f"FFmpeg: {r.stderr[-300:]}")
+        raise RuntimeError(f"FFmpeg convert: {r.stderr[-500:]}")
 
 def add_mascot(video_path, output_path, mascot_path):
     if not os.path.exists(mascot_path):
@@ -58,12 +68,17 @@ def add_mascot(video_path, output_path, mascot_path):
     w = int(img.width * h / img.height)
     x = 1080 - w - 20
     y = 1920 - h
-    cmd = ["ffmpeg", "-y", "-i", video_path, "-i", mascot_path,
-           "-filter_complex", f"[1:v]scale={w}:{h}[m];[0:v][m]overlay={x}:{y}[out]",
-           "-map", "[out]", "-map", "0:a", "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", video_path, "-i", mascot_path,
+        "-filter_complex", f"[1:v]scale={w}:{h}[m];[0:v][m]overlay={x}:{y}[out]",
+        "-map", "[out]", "-map", "0:a",
+        "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k",
+        "-preset", "fast", "-pix_fmt", "yuv420p", output_path
+    ]
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
-        raise RuntimeError(f"Mascot: {r.stderr[-200:]}")
+        raise RuntimeError(f"FFmpeg mascot: {r.stderr[-500:]}")
 
 async def generate_title(name=""):
     try:
@@ -78,10 +93,14 @@ async def generate_title(name=""):
         return name.upper()[:50] if name else "ДИВИСЬ ДО КІНЦЯ"
 
 def add_title(video_path, output_path, title):
-    safe = title.replace("'",'').replace(":","").replace("\\","")[:50]
-    cmd = ["ffmpeg", "-y", "-i", video_path,
-           "-vf", f"drawtext=text='{safe}':fontsize=65:fontcolor=white:borderw=4:bordercolor=black:x=(w-text_w)/2:y=120:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-           "-map", "0:a", "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
+    safe = title.replace("'", "").replace(":", "").replace("\\", "")[:50]
+    cmd = [
+        "ffmpeg", "-y", "-i", video_path,
+        "-filter_complex", f"[0:v]drawtext=text='{safe}':fontsize=65:fontcolor=white:borderw=4:bordercolor=black:x=(w-text_w)/2:y=120:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf[out]",
+        "-map", "[out]", "-map", "0:a",
+        "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k",
+        "-preset", "fast", "-pix_fmt", "yuv420p", output_path
+    ]
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         import shutil
@@ -97,11 +116,11 @@ async def process_video(video_path, mascot_path="data/mascot.png"):
             v = f"temp/clips/clip_{i+1:02d}_v.mp4"
             m = f"temp/clips/clip_{i+1:02d}_m.mp4"
             f = f"temp/clips/clip_{i+1:02d}_final.mp4"
-            await loop.run_in_executor(None, convert_to_vertical, video_path, v, start, end-start)
+            await loop.run_in_executor(None, convert_to_vertical, video_path, v, start, end - start)
             await loop.run_in_executor(None, add_mascot, v, m, mascot_path)
             title = await generate_title(os.path.basename(video_path))
             await loop.run_in_executor(None, add_title, m, f, title)
-            ready_clips.append({"path": f, "title": title, "duration": end-start})
+            ready_clips.append({"path": f, "title": title, "duration": end - start})
             for tmp in [v, m]:
                 if os.path.exists(tmp):
                     os.remove(tmp)
