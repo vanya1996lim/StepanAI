@@ -39,7 +39,7 @@ def convert_to_vertical(input_path, output_path, start, duration):
     if is_vertical:
         cmd = ["ffmpeg", "-y", "-ss", str(start), "-i", input_path, "-t", str(duration),
                "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2",
-               "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
+               "-map", "0:v", "-map", "0:a", "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
     else:
         cmd = ["ffmpeg", "-y", "-ss", str(start), "-i", input_path, "-t", str(duration),
                "-filter_complex", "[0:v]scale=1080:1920,boxblur=20:5[bg];[0:v]scale=1080:607[vid];[bg][vid]overlay=0:656[out]",
