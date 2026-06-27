@@ -1,4 +1,4 @@
-import subprocess
+content = '''import subprocess
 import os
 import asyncio
 import logging
@@ -78,7 +78,7 @@ async def generate_title(name=""):
         return name.upper()[:50] if name else "ДИВИСЬ ДО КІНЦЯ"
 
 def add_title(video_path, output_path, title):
-    safe = title.replace("'",'').replace(":","").replace("\\","")[:50]
+    safe = title.replace("'",'').replace(":","").replace("\\\\","")[:50]
     cmd = ["ffmpeg", "-y", "-i", video_path,
            "-vf", f"drawtext=text='{safe}':fontsize=65:fontcolor=white:borderw=4:bordercolor=black:x=(w-text_w)/2:y=120:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
            "-map", "0:a", "-c:v", "libx264", "-c:a", "aac", "-preset", "fast", "-pix_fmt", "yuv420p", output_path]
@@ -110,3 +110,8 @@ async def process_video(video_path, mascot_path="data/mascot.png"):
             logger.error(f"Кліп {i+1} помилка: {e}")
     logger.info(f"Готово {len(ready_clips)} кліпів")
     return ready_clips
+'''
+
+with open("modules/processor.py", "w") as f:
+    f.write(content)
+print("OK")
