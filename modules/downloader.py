@@ -1,63 +1,53 @@
+import yt_dlp
 import os
 import asyncio
 import logging
-import aiohttp
+import random
 
 logger = logging.getLogger(__name__)
 
-RAPIDAPI_KEY = "a389fce096mshcb0341ae8ba5075p1b91cejsn17a50795028c"
+PROXIES = [
+    "http://liejdvlv:c44vg83ye651@31.59.20.176:6754",
+    "http://liejdvlv:c44vg83ye651@31.56.127.193:7684",
+    "http://liejdvlv:c44vg83ye651@45.38.107.97:6014",
+    "http://liejdvlv:c44vg83ye651@38.154.203.95:5863",
+    "http://liejdvlv:c44vg83ye651@198.105.121.200:6462",
+    "http://liejdvlv:c44vg83ye651@64.137.96.74:6641",
+    "http://liejdvlv:c44vg83ye651@198.23.243.226:6361",
+    "http://liejdvlv:c44vg83ye651@38.154.185.97:6370",
+    "http://liejdvlv:c44vg83ye651@142.111.67.146:5611",
+    "http://liejdvlv:c44vg83ye651@191.96.254.138:6185",
+]
 
 async def download_video(url: str) -> str:
     output_dir = "temp"
     os.makedirs(output_dir, exist_ok=True)
 
-    # Витягуємо video ID з YouTube URL
-    video_id = url
-    if "youtube.com" in url or "youtu.be" in url:
-        if "v=" in url:
-            video_id = url.split("v=")[1].split("&")[0]
-        elif "youtu.be/" in url:
-            video_id = url.split("youtu.be/")[1].split("?")[0]
+    proxy = random.choice(PROXIES)
+    logger.info(f"Використовую проксі: {proxy}")
 
-    async with aiohttp.ClientSession() as session:
-        headers = {
-            "x-rapidapi-key": RAPIDAPI_KEY,
-            "x-rapidapi-host": "youtube-media-downloader.p.rapidapi.com"
-        }
+    ydl_opts = {
+        "outtmpl": f"{output_dir}/%(id)s.%(ext)s",
+        "format": "bestvideo[height<=720]+bestaudio/best",
+        "proxy": proxy,
+        "cookiefile": "data/cookies.txt",
+        "quiet": True,
+        "no_warnings": True,
+        "merge_output_format": "mp4",
+    }
 
-        params = {
-            "videoId": video_id,
-            "urlAccess": "normal",
-            "videos": "auto",
-            "audios": "auto"
-        }
+    def _download():
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            video_id = info["id"]
+            path = f"{output_dir}/{video_id}.mp4"
+            if not os.path.exists(path):
+                for f in os.listdir(output_dir):
+                    if f.startswith(video_id):
+                        return f"{output_dir}/{f}"
+            return path
 
-        async with session.get(
-            "https://youtube-media-downloader.p.rapidapi.com/v2/video/details",
-            headers=headers, params=params
-        ) as resp:
-            data = await resp.json()
-            logger.info(f"API keys: {list(data.keys()) if isinstance(data, dict) else data}")
-
-        # Шукаємо відео посилання
-        video_url = None
-        videos = data.get("videos", {})
-        if isinstance(videos, dict):
-            items = videos.get("items", [])
-            for v in items:
-                if isinstance(v, dict) and v.get("height", 9999) <= 720:
-                    video_url = v.get("url")
-                    break
-
-        if not video_url:
-            raise ValueError(f"Не вдалось отримати посилання: {data}")
-
-        # Завантажуємо відео
-        video_path = f"{output_dir}/video_{abs(hash(url))}.mp4"
-        async with session.get(video_url) as video_resp:
-            with open(video_path, "wb") as f:
-                async for chunk in video_resp.content.iter_chunked(8192):
-                    f.write(chunk)
-
+    loop = asyncio.get_event_loop()
+    video_path = await loop.run_in_executor(None, _download)
     logger.info(f"Відео завантажено: {video_path}")
     return video_path
