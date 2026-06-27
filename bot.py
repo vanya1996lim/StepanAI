@@ -1,3 +1,7 @@
+import subprocess as _sp
+_sp.run(['apt-get', 'update', '-qq'], capture_output=True)
+_sp.run(['apt-get', 'install', '-y', 'ffmpeg'], capture_output=True)
+
 import logging
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
