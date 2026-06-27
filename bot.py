@@ -197,7 +197,6 @@ async def handle_video_link(update: Update, context: ContextTypes.DEFAULT_TYPE, 
             if os.path.exists(clip["path"]):
                 await update.message.reply_video(open(clip["path"], "rb"), caption=clip["title"])
         return
-        )
 
     except Exception as e:
         logger.error(f"Error processing video: {e}")
