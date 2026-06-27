@@ -11,89 +11,29 @@ logger = logging.getLogger(__name__)
 # ===== AI НАРІЗКА — знаходить кращі моменти =====
 
 def detect_best_moments(video_path: str, min_duration: int = 30, max_duration: int = 90, max_clips: int = 20) -> list:
-    """
-    Знаходить кращі моменти у відео через аналіз аудіо та сцен.
-    Повертає список (start_sec, end_sec).
-    """
-    # Отримуємо тривалість відео
+    """Ділить відео на рівні кліпи."""
     probe_cmd = [
         'ffprobe', '-v', 'quiet', '-print_format', 'json',
-        '-show_format', '-show_streams', video_path
+        '-show_format', video_path
     ]
     result = subprocess.run(probe_cmd, capture_output=True, text=True)
-    info = json.loads(result.stdout)
+    import json as _json
+    info = _json.loads(result.stdout)
     total_duration = float(info['format']['duration'])
 
     logger.info(f"Тривалість відео: {total_duration:.0f} сек")
 
-    # Аналіз гучності аудіо — знаходимо активні моменти
-    loudness_cmd = [
-        'ffmpeg', '-i', video_path,
-        '-af', 'silencedetect=noise=-30dB:d=0.5',
-        '-f', 'null', '-'
-    ]
-    result = subprocess.run(loudness_cmd, capture_output=True, text=True)
-    stderr = result.stderr
-
-    # Парсимо моменти тиші щоб знайти активні частини
-    silence_starts = []
-    silence_ends = []
-
-    for line in stderr.split('\n'):
-        if 'silence_start' in line:
-            try:
-                t = float(line.split('silence_start: ')[1].strip())
-                silence_starts.append(t)
-            except:
-                pass
-        if 'silence_end' in line:
-            try:
-                t = float(line.split('silence_end: ')[1].split(' ')[0])
-                silence_ends.append(t)
-            except:
-                pass
-
-    # Будуємо активні сегменти (де є звук)
-    active_segments = []
-
-    if silence_starts and silence_ends:
-        # Початок відео до першої тиші
-        if silence_starts[0] > 10:
-            active_segments.append((0, silence_starts[0]))
-
-        # Між тишами
-        for i in range(len(silence_ends)):
-            start = silence_ends[i]
-            end = silence_starts[i + 1] if i + 1 < len(silence_starts) else total_duration
-            if end - start >= 10:
-                active_segments.append((start, end))
-    else:
-        # Якщо тиші не знайдено — ділимо рівномірно
-        active_segments = [(i * 60, min((i + 1) * 60, total_duration))
-                          for i in range(int(total_duration // 60))]
-
-    # Нарізаємо активні сегменти на кліпи потрібної довжини
     clips = []
-    for seg_start, seg_end in active_segments:
-        seg_duration = seg_end - seg_start
-        if seg_duration < min_duration:
-            continue
-
-        # Якщо сегмент довший за max_duration — ділимо
-        if seg_duration <= max_duration:
-            clips.append((seg_start, seg_end))
-        else:
-            current = seg_start
-            while current + min_duration < seg_end:
-                clip_end = min(current + max_duration, seg_end)
-                clips.append((current, clip_end))
-                current = clip_end
-
+    current = 0
+    while current + min_duration < total_duration:
+        clip_end = min(current + max_duration, total_duration)
+        clips.append((current, clip_end))
+        current = clip_end
         if len(clips) >= max_clips:
             break
 
     logger.info(f"Знайдено {len(clips)} кліпів")
-    return clips[:max_clips]
+    return clips
 
 
 # ===== КОНВЕРТАЦІЯ 16:9 → 9:16 з розмитим фоном =====
