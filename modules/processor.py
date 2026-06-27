@@ -96,7 +96,7 @@ def add_title(video_path, output_path, title):
     safe = title.replace("'", "").replace(":", "").replace("\\", "")[:50]
     cmd = [
         "ffmpeg", "-y", "-i", video_path,
-        "-filter_complex", f"[0:v]drawtext=text='{safe}':fontsize=65:fontcolor=white:borderw=4:bordercolor=black:x=(w-text_w)/2:y=120:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf[out]",
+        "-filter_complex", f"[0:v]drawtext=text='{safe}':fontsize=65:fontcolor=white:borderw=4:bordercolor=black:x=(w-text_w)/2:y=200:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf[out]",
         "-map", "[out]", "-map", "0:a",
         "-c:v", "libx264", "-b:v", "1000k", "-c:a", "aac", "-b:a", "128k",
         "-preset", "fast", "-pix_fmt", "yuv420p", output_path
