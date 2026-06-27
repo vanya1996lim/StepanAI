@@ -195,7 +195,17 @@ async def handle_video_link(update: Update, context: ContextTypes.DEFAULT_TYPE, 
         )
         for clip in clips:
             if os.path.exists(clip["path"]):
-                await update.message.reply_video(open(clip["path"], "rb"), caption=clip["title"])
+                try:
+                    await update.message.reply_video(
+                        open(clip["path"], "rb"),
+                        caption=clip["title"],
+                        read_timeout=120,
+                        write_timeout=120,
+                        connect_timeout=60
+                    )
+                except Exception as ve:
+                    logger.error(f"Відео не надіслано: {ve}")
+                    await update.message.reply_text(f"⚠️ Кліп готовий але завеликий для Telegram: {clip['title']}")
         return
 
     except Exception as e:
