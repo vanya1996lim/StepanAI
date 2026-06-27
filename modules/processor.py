@@ -7,13 +7,21 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
-def get_duration(video_path):
-    r = subprocess.run(["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", video_path], capture_output=True, text=True)
-    return float(json.loads(r.stdout)["format"]["duration"])
+def get_video_info(video_path):
+    r = subprocess.run(["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", video_path], capture_output=True, text=True)
+    data = json.loads(r.stdout)
+    duration = float(data["format"]["duration"])
+    width, height = 1920, 1080
+    for s in data.get("streams", []):
+        if s.get("codec_type") == "video":
+            width = s.get("width", 1920)
+            height = s.get("height", 1080)
+            break
+    return duration, width, height
 
 def detect_best_moments(video_path, min_duration=5, max_duration=90, max_clips=20):
-    total = get_duration(video_path)
-    logger.info(f"Тривалість: {total:.0f} сек")
+    total, w, h = get_video_info(video_path)
+    logger.info(f"Тривалість: {total:.0f} сек, розмір: {w}x{h}")
     if total < min_duration:
         return [(0, total)]
     clips = []
@@ -26,9 +34,21 @@ def detect_best_moments(video_path, min_duration=5, max_duration=90, max_clips=2
     return clips
 
 def convert_to_vertical(input_path, output_path, start, duration):
-    cmd = ["ffmpeg", "-y", "-ss", str(start), "-i", input_path, "-t", str(duration),
-           "-filter_complex", "[0:v]scale=1080:1920,boxblur=20:5[bg];[0:v]scale=1080:607[vid];[bg][vid]overlay=0:656[out]",
-           "-map", "[out]", "-map", "0:a", "-c:v", "libx264", "-c:a", "aac", "-preset", "fast", output_path]
+    # Перевіряємо орієнтацію
+    _, w, h = get_video_info(input_path)
+    is_vertical = h > w
+
+    if is_vertical:
+        # Вже вертикальне — просто масштабуємо до 1080x1920
+        cmd = ["ffmpeg", "-y", "-ss", str(start), "-i", input_path, "-t", str(duration),
+               "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1",
+               "-c:v", "libx264", "-c:a", "aac", "-preset", "fast", output_path]
+    else:
+        # Горизонтальне — конвертуємо з розмитим фоном
+        cmd = ["ffmpeg", "-y", "-ss", str(start), "-i", input_path, "-t", str(duration),
+               "-filter_complex", "[0:v]scale=1080:1920,boxblur=20:5[bg];[0:v]scale=1080:607[vid];[bg][vid]overlay=0:656[out]",
+               "-map", "[out]", "-map", "0:a", "-c:v", "libx264", "-c:a", "aac", "-preset", "fast", output_path]
+
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         raise RuntimeError(f"FFmpeg: {r.stderr[-300:]}")
